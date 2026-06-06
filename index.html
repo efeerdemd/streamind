@@ -304,7 +304,7 @@ input[type=range].ns::-webkit-slider-thumb{border-color:#94a3b8;box-shadow:0 2px
 .contrib-row{display:flex;align-items:center;gap:12px;padding:14px 0}
 .contrib-name{width:46px;font-size:.78rem;font-weight:700;color:#334155;text-align:right;flex-shrink:0}
 .bar-track{flex:1;height:30px;background:#F1F5F9;border-radius:8px;overflow:hidden;position:relative}
-.bar-fill{height:100%;border-radius:7px;background:linear-gradient(90deg,var(--primary),var(--secondary));transition:width .45s cubic-bezier(.4,0,.2,1);min-width:2px}
+.bar-fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--primary),var(--secondary));transition:width .45s cubic-bezier(.4,0,.2,1);min-width:2px;display:flex;align-items:center;justify-content:flex-end;padding-right:8px;color:#fff;font-size:.72rem;font-weight:800;white-space:nowrap;overflow:hidden;box-sizing:border-box}
 .bar-fill.ns{background:#CBD5E1}
 .contrib-val{width:54px;font-size:.8rem;font-weight:700;font-variant-numeric:tabular-nums;color:var(--text)}
 
@@ -831,7 +831,7 @@ const inputs = { H:0, SI:0, RSA:0, RSD:0, RSN:0, PV:0 };
 const slidersEl=document.getElementById('sliders');
 CONSTRUCTS.forEach(c=>{
   const row=document.createElement('div'); row.className='slider-row';
-  row.innerHTML=`<div class="slider-head"><div class="slider-label"><span class="chip ${c.sig?'':'ns'}">${c.k}</span><span class="slider-name">${c.name}${c.sig?'':'<span class="ns-tag">non-sig.</span>'}<small>${c.sub}</small></span></div><div class="vals"><span class="delta" id="d-${c.k}">+0.00</span> <span class="proj" id="p-${c.k}">→ ${BASE[c.k].toFixed(2)}</span></div></div><input type="range" class="${c.sig?'':'ns'}" id="s-${c.k}" min="0" max="2" step="0.05" value="0">`;
+  row.innerHTML=`<div class="slider-head"><div class="slider-label"><span class="chip ${c.sig?'':'ns'}">${c.k}</span><span class="slider-name">${c.name}${c.sig?'':'<span class="ns-tag">non-sig.</span>'}<small>${c.sub}</small></span></div><div class="vals"><span class="delta" id="d-${c.k}">+0.00</span> <span class="proj" id="p-${c.k}">→ ${BASE[c.k].toFixed(2)}</span></div></div><input type="range" class="${c.sig?'':'ns'}" id="s-${c.k}" min="0" max="${(CAP - BASE[c.k]).toFixed(2)}" step="0.01" value="0">`;
   slidersEl.appendChild(row);
   row.querySelector('input').addEventListener('input',e=>{ inputs[c.k]=parseFloat(e.target.value); recalc(); });
 });
@@ -876,8 +876,15 @@ function recalc(){
   document.getElementById('fPV').textContent=projPV.toFixed(2);
   document.getElementById('fSCI').textContent=projSCI.toFixed(2);
   CONSTRUCTS.forEach(c=>{ document.getElementById('d-'+c.k).textContent='+'+inputs[c.k].toFixed(2); document.getElementById('p-'+c.k).textContent='→ '+Math.min(BASE[c.k]+inputs[c.k],CAP).toFixed(2); });
-  const maxC=Math.max(0.001,...Object.values(contrib));
-  CONSTRUCTS.forEach(c=>{ const val=contrib[c.k]; document.getElementById('cv-'+c.k).textContent='+'+val.toFixed(3); document.getElementById('bar-'+c.k).style.width=(val/maxC*100)+'%'; });
+  const totalC=Object.values(contrib).reduce((a,b)=>a+b,0);
+CONSTRUCTS.forEach(c=>{
+  const val=contrib[c.k];
+  const share = totalC>0 ? (val/totalC*100) : 0;
+  document.getElementById('cv-'+c.k).textContent='+'+val.toFixed(3);
+  const bar=document.getElementById('bar-'+c.k);
+  bar.style.width=share+'%';
+  bar.textContent = share>=0.5 ? share.toFixed(0)+'%' : '';
+});
   const ins=document.getElementById('insight'); const anyInput=Object.values(inputs).some(v=>v>0);
   const nameMap={H:'Habit',SI:'Social Influence',RSA:'Recommendation Accuracy',RSD:'Recommendation Diversity',PV:'Perceived Value',RSN:'Recommendation Novelty'};
   if(!anyInput){ ins.innerHTML='Move a slider to see which lever yields the biggest lift. <b>Habit (β=0.477)</b> gives the largest return per point.'; }
